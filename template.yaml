@@ -43,11 +43,10 @@ Resources:
   SubmitRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: submitAnswer, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
   OpenRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: openCards, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
   NextRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: nextRound, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
-  Deployment:
-    Type: AWS::ApiGatewayV2::Deployment
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
     DependsOn: [ConnectRoute, DisconnectRoute, DefaultRoute, CreateRoute, JoinRoute, StartRoute, RevealRoute, SubmitRoute, OpenRoute, NextRoute]
-    Properties: {ApiId: !Ref GameApi}
-  Stage: {Type: AWS::ApiGatewayV2::Stage, Properties: {ApiId: !Ref GameApi, DeploymentId: !Ref Deployment, StageName: prod, AutoDeploy: true}}
+    Properties: {ApiId: !Ref GameApi, StageName: prod, AutoDeploy: true}
   InvokePermission:
     Type: AWS::Lambda::Permission
     Properties:
