@@ -1,5 +1,5 @@
 import {DynamoDBClient} from "@aws-sdk/client-dynamodb";
-import {DynamoDBDocumentClient,GetCommand,PutCommand,DeleteCommand} from "@aws-sdk/lib-dynamodb";
+import {DynamoDBDocumentClient,GetCommand,PutCommand,DeleteCommand,UpdateCommand} from "@aws-sdk/lib-dynamodb";
 import {ApiGatewayManagementApiClient,PostToConnectionCommand} from "@aws-sdk/client-apigatewaymanagementapi";
 import {randomInt} from "node:crypto";
 const db=DynamoDBDocumentClient.from(new DynamoDBClient({})),TableName=process.env.TABLE_NAME;
@@ -17,7 +17,7 @@ else if(route==="joinRoom"){const code=clean(body.roomCode,4),name=clean(body.na
 else{const conn=await getConn(id);if(!conn)throw new Error("ルームに入り直してください");const room=await getRoom(conn.roomCode);if(!room)throw new Error("ルームの有効期限が切れました");const player=room.players.find(p=>p.id===id);if(!player)throw new Error("プレイヤーが見つかりません");
 if(route==="startGame"){host(room,id);if(room.players.length<2)throw new Error("2人以上で遊んでください");const topic=clean(body.topic,40);if(!topic)throw new Error("お題を入力してください");const nums=numbers(room.players.length);room.players.forEach((p,i)=>{p.number=nums[i];p.answer=""});room.topic=topic;room.phase="PLAYING";await saveRoom(room);await broadcast(room,client)}
 else if(route==="revealNumber"){if(room.phase!=="PLAYING"||player.answer)throw new Error("今は数字を見られません");await send(client,id,{type:"number",number:player.number})}
-else if(route==="submitAnswer"){if(room.phase!=="PLAYING")throw new Error("回答受付中ではありません");const answer=clean(body.answer,30);if(!answer)throw new Error("回答を入力してください");player.answer=answer;await saveRoom(room);await broadcast(room,client)}
+else if(route==="submitAnswer"){if(room.phase!=="PLAYING")throw new Error("回答受付中ではありません");const answer=clean(body.answer,30);if(!answer)throw new Error("回答を入力してください");const index=room.players.findIndex(p=>p.id===id);let updated;try{updated=(await db.send(new UpdateCommand({TableName,Key:{pk:room.pk},UpdateExpression:"SET players["+index+"].answer = :answer",ConditionExpression:"players["+index+"].id = :id AND #phase = :playing",ExpressionAttributeNames:{"#phase":"phase"},ExpressionAttributeValues:{":answer":answer,":id":id,":playing":"PLAYING"},ReturnValues:"ALL_NEW"}))).Attributes}catch(e){if(e.name==="ConditionalCheckFailedException")throw new Error("状態が更新されました。もう一度お試しください");throw e}await broadcast(updated,client)}
 else if(route==="openCards"){host(room,id);if(!room.players.every(p=>p.answer))throw new Error("まだ回答していない人がいます");room.phase="OPENED";await saveRoom(room);await Promise.all(room.players.map(p=>send(client,p.id,{type:"opened"})));await broadcast(room,client)}
 else if(route==="nextRound"){host(room,id);room.phase="TOPIC";room.topic="";room.players.forEach(p=>{p.number=null;p.answer=""});await saveRoom(room);await broadcast(room,client)}
 else throw new Error("不明な操作です")}}catch(e){console.error(e);await send(client,id,{type:"error",message:e.message||"エラーが発生しました"})}return{statusCode:200}}
