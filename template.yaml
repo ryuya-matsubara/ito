@@ -1,0 +1,59 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Realtime backend for ito
+Resources:
+  GameTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions: [{AttributeName: pk, AttributeType: S}]
+      KeySchema: [{AttributeName: pk, KeyType: HASH}]
+      TimeToLiveSpecification: {AttributeName: expiresAt, Enabled: true}
+  GameFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: nodejs22.x
+      Handler: app.handler
+      CodeUri: backend/
+      MemorySize: 128
+      Timeout: 10
+      Environment: {Variables: {TABLE_NAME: !Ref GameTable}}
+      Policies:
+        - DynamoDBCrudPolicy: {TableName: !Ref GameTable}
+        - Statement:
+            - Effect: Allow
+              Action: execute-api:ManageConnections
+              Resource: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${GameApi}/*
+  GameApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties: {Name: ito-websocket, ProtocolType: WEBSOCKET, RouteSelectionExpression: '$request.body.action'}
+  GameIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref GameApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GameFunction.Arn}/invocations
+  ConnectRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: '$connect', AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  DisconnectRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: '$disconnect', AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  DefaultRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: '$default', AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  CreateRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: createRoom, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  JoinRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: joinRoom, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  StartRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: startGame, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  RevealRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: revealNumber, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  SubmitRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: submitAnswer, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  OpenRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: openCards, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  NextRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: nextRound, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn: [ConnectRoute, DisconnectRoute, DefaultRoute, CreateRoute, JoinRoute, StartRoute, RevealRoute, SubmitRoute, OpenRoute, NextRoute]
+    Properties: {ApiId: !Ref GameApi}
+  Stage: {Type: AWS::ApiGatewayV2::Stage, Properties: {ApiId: !Ref GameApi, DeploymentId: !Ref Deployment, StageName: prod, AutoDeploy: true}}
+  InvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref GameFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${GameApi}/*
+Outputs:
+  WebSocketUrl: {Value: !Sub 'wss://${GameApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/prod'}
