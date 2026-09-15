@@ -33,7 +33,7 @@ Resources:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               StringLike:
-                token.actions.githubusercontent.com:sub: repo:ryuya-matsubara/ito:*
+                token.actions.githubusercontent.com:sub: repo:ryuya-matsubara@221740996/ito@1370134976:ref:refs/heads/main
       Policies:
         - PolicyName: DeployItoSamStack
           PolicyDocument:
