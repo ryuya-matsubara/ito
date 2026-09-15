@@ -52,6 +52,9 @@ Resources:
                   - cloudformation:GetTemplateSummary
                 Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/ito-game/*
               - Effect: Allow
+                Action: cloudformation:CreateChangeSet
+                Resource: !Sub arn:${AWS::Partition}:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+              - Effect: Allow
                 Action: [s3:GetObject, s3:PutObject, s3:DeleteObject, s3:ListBucket, s3:GetBucketLocation]
                 Resource:
                   - !Sub arn:${AWS::Partition}:s3:::ito-github-deploy-${AWS::AccountId}-${AWS::Region}
