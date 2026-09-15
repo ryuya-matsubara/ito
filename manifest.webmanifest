@@ -1,0 +1,25 @@
+{
+  "name": "ito - 価値観をつなぐゲーム",
+  "short_name": "ito",
+  "description": "みんなの価値観を言葉で表して、数字の順番を当てるゲーム",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff8e8",
+  "theme_color": "#f4b942",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "./pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
