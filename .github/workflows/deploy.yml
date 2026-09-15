@@ -54,7 +54,7 @@ jobs:
             aws cloudformation describe-stack-events \
               --stack-name ito-game \
               --region ap-northeast-1 \
-              --query "StackEvents[?contains(ResourceStatus, 'FAILED')].[Timestamp,LogicalResourceId,ResourceType,ResourceStatusReason]" \
+              --query "StackEvents[:30].[Timestamp,LogicalResourceId,ResourceType,ResourceStatus,ResourceStatusReason]" \
               --output table
             exit 1
           fi
