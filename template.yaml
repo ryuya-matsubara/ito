@@ -38,6 +38,8 @@ Resources:
   DefaultRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: '$default', AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
   CreateRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: createRoom, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
   JoinRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: joinRoom, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  ResumeRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: resumeRoom, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
+  PingRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: ping, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
   StartRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: startGame, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
   RevealRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: revealNumber, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
   SubmitRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: submitAnswer, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
@@ -45,7 +47,7 @@ Resources:
   NextRoute: {Type: AWS::ApiGatewayV2::Route, Properties: {ApiId: !Ref GameApi, RouteKey: nextRound, AuthorizationType: NONE, Target: !Sub 'integrations/${GameIntegration}'}}
   Stage:
     Type: AWS::ApiGatewayV2::Stage
-    DependsOn: [ConnectRoute, DisconnectRoute, DefaultRoute, CreateRoute, JoinRoute, StartRoute, RevealRoute, SubmitRoute, OpenRoute, NextRoute]
+    DependsOn: [ConnectRoute, DisconnectRoute, DefaultRoute, CreateRoute, JoinRoute, ResumeRoute, PingRoute, StartRoute, RevealRoute, SubmitRoute, OpenRoute, NextRoute]
     Properties: {ApiId: !Ref GameApi, StageName: prod, AutoDeploy: true}
   InvokePermission:
     Type: AWS::Lambda::Permission
